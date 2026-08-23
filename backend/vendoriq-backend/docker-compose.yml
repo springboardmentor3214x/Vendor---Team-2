@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: vendoriq-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vendoriq}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vendoriq}
+      POSTGRES_DB: ${POSTGRES_DB:-vendoriq}
+    volumes:
+      - vendoriq_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vendoriq}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: vendoriq-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: .
+    container_name: vendoriq-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vendoriq}:${POSTGRES_PASSWORD:-vendoriq}@db:5432/${POSTGRES_DB:-vendoriq}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  celery_worker:
+    build: .
+    container_name: vendoriq-celery-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vendoriq}:${POSTGRES_PASSWORD:-vendoriq}@db:5432/${POSTGRES_DB:-vendoriq}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - backend
+      - redis
+    command: celery -A app.celery_app worker --loglevel=info
+
+volumes:
+  vendoriq_pgdata:

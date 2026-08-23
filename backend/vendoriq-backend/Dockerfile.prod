@@ -1,0 +1,45 @@
+# Production image for the VendorIQ backend.
+# Multi-stage build: compile deps in a builder stage, ship a slim runtime
+# image with a non-root user and no build toolchain.
+
+# ---- Builder ----------------------------------------------------------
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+ENV PIP_NO_CACHE_DIR=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt gunicorn
+
+# ---- Runtime ------------------------------------------------------------
+FROM python:3.12-slim AS runtime
+
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH=/install/bin:$PATH \
+    PYTHONPATH=/install/lib/python3.12/site-packages
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --uid 1000 appuser
+
+COPY --from=builder /install /install
+COPY --chown=appuser:appuser . .
+
+RUN mkdir -p /app/uploads && chown -R appuser:appuser /app/uploads
+USER appuser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# 4 sync workers is a reasonable default for a small/medium deployment —
+# tune with WEB_CONCURRENCY at deploy time if needed.
+CMD ["sh", "-c", "alembic upgrade head && gunicorn app.main:app -k uvicorn.workers.UvicornWorker -w ${WEB_CONCURRENCY:-4} -b 0.0.0.0:8000 --access-logfile - --error-logfile -"]
