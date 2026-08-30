@@ -1,0 +1,8 @@
+﻿src/components/procurement/OrderTracking.tsx(147,53): error TS18048: 'r.vendorName' is possibly 'undefined'.
+src/components/procurement/OrderTracking.tsx(151,38): error TS18048: 'r.poNumber' is possibly 'undefined'.
+src/components/procurement/OrderTracking.tsx(151,97): error TS18048: 'r.vendorName' is possibly 'undefined'.
+src/components/procurement/OrderTracking.tsx(302,61): error TS18048: 'r.vendorName' is possibly 'undefined'.
+src/components/procurement/ProcurementInvoices.tsx(115,20): error TS18048: 'po.paymentTerms' is possibly 'undefined'.
+src/components/procurement/ProcurementInvoices.tsx(116,20): error TS18048: 'po.paymentTerms' is possibly 'undefined'.
+src/components/procurement/ProcurementInvoices.tsx(117,20): error TS18048: 'po.paymentTerms' is possibly 'undefined'.
+src/components/procurement/ProcurementRequests.tsx(247,52): error TS18048: 'r.requestedByName' is possibly 'undefined'.

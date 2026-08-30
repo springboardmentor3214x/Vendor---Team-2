@@ -1,0 +1,5 @@
+src/components/UserProfile.tsx(248,6): error TS17008: JSX element 'div' has no corresponding closing tag.
+src/components/UserProfile.tsx(761,8): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/components/UserProfile.tsx(856,4): error TS1005: '}' expected.
+src/components/UserProfile.tsx(857,1): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/components/UserProfile.tsx(858,1): error TS1005: '</' expected.
